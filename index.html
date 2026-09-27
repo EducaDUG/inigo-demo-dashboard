@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Íñigo's Learning Dashboard (Demo Example)</title>
+<style>
+  :root{
+    /* Palette pulled directly from Discovery Lab's live homepage
+       (https://educadug.github.io/discovery-lab/, engine/style.css?v=12),
+       which renders with :root, [data-theme="earth"] - "Environmental Science -
+       soil, water, air". Confirmed against the fetched stylesheet, not invented. */
+    --paper:#F2EFE6; --surface:#FBF9F3; --surface-2:#EAE6D9;
+    --ink:#1D211C; --ink-2:#4A5148; --ink-3:#757C72;
+    --line:#1D211C24; --line-strong:#1D211C40;
+    --accent:#40634C; --accent-hi:#517B5E; --accent-ink:#FBF9F3;
+    --accent-wash:#40634C14;
+    --signal:#B5551F; --signal-wash:#B5551F14;
+    --positive:#2F6B45; --caution:#A66B00;
+    --radius:14px; --radius-lg:22px;
+    --font-display:"Fraunces","Iowan Old Style",Georgia,serif;
+    --font-ui:"Public Sans",ui-sans-serif,system-ui,"Segoe UI",sans-serif;
+    --font-data:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--font-ui);background-color:var(--paper);color:var(--ink);line-height:1.55;
+    /* Faint field-notebook grid, same recipe as the Discovery Lab homepage body rule. */
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:48px 48px,48px 48px;
+    background-position:-1px -1px;
+  }
+  a{color:var(--signal);}
+  .eyebrow-label{font-family:var(--font-data);font-size:0.72rem;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--signal);display:inline-flex;align-items:center;gap:6px;}
+  .target-icon{display:inline-block;width:14px;height:14px;vertical-align:middle;color:var(--signal);}
+  .shell{max-width:920px;margin:0 auto;padding:0 20px;}
+  header.site{background:var(--surface);border-bottom:1px dashed var(--line-strong);padding:22px 0;}
+  header.site h1{font-family:var(--font-display);font-size:1.9rem;margin:0 0 4px;
+    font-variation-settings:"wght" 600;}
+  header.site p{margin:0;color:var(--ink-2);font-size:0.95rem;}
+  nav.tabs{display:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border-bottom:1px dashed var(--line-strong);
+    padding:10px 0;position:sticky;top:0;z-index:5;}
+  nav.tabs .shell{display:flex;gap:8px;flex-wrap:wrap;}
+  .tab-btn{border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-2);
+    padding:9px 14px;border-radius:999px;font:inherit;font-family:var(--font-data);
+    text-transform:uppercase;letter-spacing:.04em;font-weight:700;font-size:0.78rem;cursor:pointer;}
+  .tab-btn.active{background:var(--signal);color:var(--accent-ink);border-color:var(--signal);}
+  main{padding:26px 0 60px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  h2.panel-title{font-family:var(--font-display);font-size:1.5rem;margin:0 0 6px;}
+  .panel-sub{color:var(--ink-2);margin:0 0 20px;font-size:0.95rem;max-width:64ch;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:18px 20px;margin-bottom:16px;}
+  .card + .card{border-top:1px dashed var(--line-strong);}
+  .card h3{margin:0 0 8px;font-size:1.05rem;font-family:var(--font-display);}
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:var(--radius);padding:14px 16px;}
+  .stat .num{font-family:var(--font-data);font-size:1.6rem;font-weight:700;color:var(--accent);}
+  .stat .label{font-size:0.8rem;color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em;}
+  .focus-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+  .focus-card{border-radius:var(--radius);padding:16px;border:1px solid var(--line);}
+  .focus-card.win{border-left:4px solid var(--positive);background:#2F6B4508;}
+  .focus-card.tonight{border-left:4px solid var(--signal);background:var(--signal-wash);}
+  .focus-card.edge{border-left:4px solid var(--caution);background:#A66B0010;}
+  .focus-card .eyebrow{font-family:var(--font-data);font-size:.72rem;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--ink-2);margin-bottom:6px;}
+  .quote-card{border-left:3px solid var(--accent);padding:12px 16px;margin-bottom:10px;background:var(--surface);
+    border-radius:var(--radius);}
+  .quote-card blockquote{margin:0 0 6px;font-family:var(--font-display);font-size:1.05rem;font-style:italic;color:var(--ink);}
+  .quote-card .interp{font-size:0.85rem;color:var(--ink-2);}
+  .pill{display:inline-block;font-family:var(--font-data);font-size:0.72rem;text-transform:uppercase;
+    letter-spacing:.06em;padding:3px 10px;border-radius:999px;border:1px solid var(--line-strong);color:var(--ink-2);
+    background:var(--surface-2);margin-right:6px;}
+  .pill.stage-Emerging{color:#A66B00;border-color:#A66B0055;background:#A66B0014;}
+  .pill.stage-Developing{color:#B5551F;border-color:#B5551F55;background:#B5551F14;}
+  .pill.stage-Growing{color:#517B5E;border-color:#517B5E55;background:#517B5E14;}
+  .pill.stage-Secure{color:#2F6B45;border-color:#2F6B4555;background:#2F6B4514;}
+  .chart-card svg{width:100%;height:auto;display:block;}
+  .chart-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:0.82rem;color:var(--ink-2);}
+  .legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle;}
+  .evidence-pop{display:none;margin-top:10px;padding:10px 12px;border-radius:var(--radius);
+    background:var(--surface-2);font-size:0.86rem;color:var(--ink-2);}
+  .evidence-pop.show{display:block;}
+  .milestone{display:flex;gap:12px;margin-bottom:14px;}
+  .milestone .dot{width:10px;height:10px;border-radius:50%;background:var(--signal);flex:0 0 auto;margin-top:6px;}
+  .milestone .date{font-family:var(--font-data);font-size:0.78rem;color:var(--ink-3);}
+  .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .profile-grid .item{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;}
+  .profile-grid .item .k{font-family:var(--font-data);font-size:0.72rem;text-transform:uppercase;color:var(--ink-2);
+    margin-bottom:4px;}
+  .basis-note{font-size:0.8rem;color:var(--ink-3);margin-top:6px;}
+  ul.plain{margin:0;padding-left:18px;}
+  ul.plain li{margin-bottom:6px;}
+  details.session{border:1px solid var(--line);border-radius:var(--radius);margin-bottom:10px;background:var(--surface);}
+  details.session summary{padding:12px 16px;cursor:pointer;font-weight:700;list-style:none;font-family:var(--font-display);}
+  details.session summary::-webkit-details-marker{display:none;}
+  details.session summary .sdate{font-family:var(--font-data);font-size:0.78rem;color:var(--ink-2);
+    font-weight:400;display:block;text-transform:uppercase;letter-spacing:.04em;}
+  details.session .session-body{padding:0 16px 16px;border-top:1px dashed var(--line-strong);}
+  details.session .session-body h4{font-size:0.85rem;margin:14px 0 6px;color:var(--ink-2);text-transform:uppercase;
+    letter-spacing:.03em;}
+  .resource-link{display:block;margin-bottom:8px;}
+  .resource-link a{font-weight:700;word-break:break-word;}
+  .resource-link .note{font-size:0.85rem;color:var(--ink-2);}
+  .about-portrait-row{display:flex;gap:18px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+  .btn-linkedin{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--accent-ink);
+    padding:10px 16px;border-radius:999px;text-decoration:none;font-weight:700;font-size:0.9rem;}
+  .about-hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;margin-bottom:22px;}
+  .about-photo-wrap{position:relative;width:168px;height:168px;margin:6px 0 8px;display:flex;align-items:center;justify-content:center;}
+  .about-photo-wrap::before{content:"";position:absolute;inset:-22px;border-radius:50%;
+    background:radial-gradient(circle,#40634C55 0%,#40634C22 40%,transparent 72%);}
+  .about-photo-wrap::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--accent-hi);opacity:.65;}
+  .about-photo{position:relative;width:168px;height:168px;border-radius:50%;object-fit:cover;
+    border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line-strong);z-index:1;}
+  .about-heading{font-family:var(--font-display);font-size:1.9rem;margin:2px 0 0;font-variation-settings:"wght" 600;}
+  .about-subheading{color:var(--ink-2);max-width:52ch;margin:0;font-size:0.98rem;}
+  .about-chip-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0 4px;}
+  .about-chip{font-family:var(--font-data);font-size:0.72rem;text-transform:uppercase;letter-spacing:.05em;
+    padding:5px 12px;border-radius:999px;border:1px solid var(--line-strong);color:var(--ink-2);background:var(--surface-2);}
+  .about-closing h3{margin:0 0 6px;font-family:var(--font-display);font-size:1.1rem;}
+  .demo-banner{max-width:920px;margin:14px auto 0;padding:14px 18px;border:2px dashed var(--signal);
+    border-radius:var(--radius);background:var(--signal-wash);color:var(--ink);font-size:0.92rem;}
+  .demo-banner strong{color:var(--signal);}
+  footer.disclaimer{border-top:1px solid var(--line);margin-top:24px;padding-top:16px;font-size:0.8rem;color:var(--ink-3);}
+  @media (max-width:640px){
+    .stat-row,.focus-row,.profile-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="shell">
+    <h1>Íñigo's Learning Dashboard</h1>
+    <p>A voluntary, supplementary learning resource from Mr. Guevara. Please refer to Canvas / the Learning Lab for grades, deadlines and official progress reports.</p>
+  </div>
+</header>
+<div class="shell"><div class="demo-banner"><strong>Demo example — not a real student.</strong> This is a fictional demonstration built to show how a Family Learning Dashboard works. Íñigo is not a real student, and no real student data appears on this page.</div></div>
+<nav class="tabs">
+  <div class="shell">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="progress">Progress</button>
+    <button class="tab-btn" data-tab="helpathome">Help at Home</button>
+    <button class="tab-btn" data-tab="sessions">Sessions</button>
+    <button class="tab-btn" data-tab="about">About</button>
+  </div>
+</nav>
+<main class="shell">
+
+  <section class="panel active" id="tab-overview"></section>
+  <section class="panel" id="tab-progress"></section>
+  <section class="panel" id="tab-helpathome"></section>
+  <section class="panel" id="tab-sessions"></section>
+  <section class="panel" id="tab-about"></section>
+
+</main>
+
+<script id="dashboard-v2-data" type="application/json">{
+  "student_first_name": "Íñigo",
+  "programme": "Primary Robotics & Coding",
+  "canvas_note": "Please refer to Canvas for quantitative information such as grades, deadlines, submitted work, and formal assessment data.",
+  "dashboard_purpose_note": "This dashboard is a voluntary teaching resource created by Mr. Guevara to show the student's longer-term learning journey, recurring patterns, and next steps across lessons.",
+  "professional_observation_note": "The learning notes in this dashboard are Mr. Guevara's professional observations based on lessons. They are not fixed labels, diagnoses, grades, or formal assessment results.",
+  "stats": {
+    "sessions_logged": 10,
+    "distinct_skills_tried": 4,
+    "milestones_hit": 3
+  },
+  "skill_threads": {
+    "Critical thinking": [
+      {
+        "session_date_iso": "2026-07-06",
+        "session_date": "6 July 2026",
+        "lesson_title": "Meet Scratch and My First Sprite",
+        "stage": "Emerging",
+        "evidence": "Íñigo worked out on his own why his sprite needed a \"when green flag clicked\" block before it would move, rather than being told directly."
+      },
+      {
+        "session_date_iso": "2026-07-20",
+        "session_date": "20 July 2026",
+        "lesson_title": "Sensors and If-Then Thinking",
+        "stage": "Developing",
+        "evidence": "Íñigo reasoned through the if-then logic a sensor needed before I demonstrated it, getting the general shape right on his first attempt."
+      },
+      {
+        "session_date_iso": "2026-08-17",
+        "session_date": "17 August 2026",
+        "lesson_title": "Intro to micro:bit and Simple Code",
+        "stage": "Growing",
+        "evidence": "Íñigo correctly predicted what the micro:bit's LEDs would do before running the code, then explained why he thought so."
+      },
+      {
+        "session_date_iso": "2026-09-07",
+        "session_date": "7 September 2026",
+        "lesson_title": "Functions and the Robot Recipe",
+        "stage": "Secure",
+        "evidence": "Íñigo independently identified a block of code he had repeated three times as a good candidate to turn into a function, without being prompted."
+      }
+    ],
+    "Creativity": [
+      {
+        "session_date_iso": "2026-07-06",
+        "session_date": "6 July 2026",
+        "lesson_title": "Meet Scratch and My First Sprite",
+        "stage": "Emerging",
+        "evidence": "Íñigo redesigned his sprite into what he called a \"robot-saurus,\" merging a dinosaur costume with mechanical parts he drew himself."
+      },
+      {
+        "session_date_iso": "2026-07-27",
+        "session_date": "27 July 2026",
+        "lesson_title": "Building a Traffic Light Circuit",
+        "stage": "Developing",
+        "evidence": "Íñigo invented his own extra light colour, \"turbo green,\" for cars he decided were allowed to go extra fast, and coded the timing for it himself."
+      },
+      {
+        "session_date_iso": "2026-08-24",
+        "session_date": "24 August 2026",
+        "lesson_title": "Debugging Detective Day",
+        "stage": "Growing",
+        "evidence": "Rather than simply fixing a broken loop, Íñigo rerouted the whole structure into a new pattern he liked better, calling it \"a happy accident.\""
+      },
+      {
+        "session_date_iso": "2026-09-14",
+        "session_date": "14 September 2026",
+        "lesson_title": "Final Project Planning: The Robot Zoo",
+        "stage": "Secure",
+        "evidence": "Íñigo designed an original \"Robot Zoo\" concept from scratch, combining three animals and a keeper robot into one coherent, well-explained plan."
+      }
+    ],
+    "Initiative and self-direction": [
+      {
+        "session_date_iso": "2026-07-13",
+        "session_date": "13 July 2026",
+        "lesson_title": "Loops and the Dizzy Dinosaur",
+        "stage": "Emerging",
+        "evidence": "Once shown one loop, Íñigo kept adjusting the repeat count on his own for several minutes after I stepped back, testing what happened."
+      },
+      {
+        "session_date_iso": "2026-07-27",
+        "session_date": "27 July 2026",
+        "lesson_title": "Building a Traffic Light Circuit",
+        "stage": "Developing",
+        "evidence": "Without being asked, Íñigo decided the traffic light needed a fourth state and built it himself before showing me."
+      },
+      {
+        "session_date_iso": "2026-08-24",
+        "session_date": "24 August 2026",
+        "lesson_title": "Debugging Detective Day",
+        "stage": "Growing",
+        "evidence": "Íñigo chose to keep hunting for what he calls \"gremlins\" in his code independently for a good few minutes before asking for help."
+      },
+      {
+        "session_date_iso": "2026-09-21",
+        "session_date": "21 September 2026",
+        "lesson_title": "Robot Zoo Showcase and Reflection",
+        "stage": "Secure",
+        "evidence": "Íñigo ran his entire Robot Zoo showcase from start to finish independently, narrating what each part did without needing prompts."
+      }
+    ],
+    "ICT literacy": [
+      {
+        "session_date_iso": "2026-07-13",
+        "session_date": "13 July 2026",
+        "lesson_title": "Loops and the Dizzy Dinosaur",
+        "stage": "Emerging",
+        "evidence": "Íñigo learned to adjust a loop's repeat count using the block's input field, rather than adding more blocks by hand."
+      },
+      {
+        "session_date_iso": "2026-07-27",
+        "session_date": "27 July 2026",
+        "lesson_title": "Building a Traffic Light Circuit",
+        "stage": "Developing",
+        "evidence": "Íñigo connected a sensor block into his program correctly on his first attempt, without needing it modelled first."
+      },
+      {
+        "session_date_iso": "2026-08-24",
+        "session_date": "24 August 2026",
+        "lesson_title": "Debugging Detective Day",
+        "stage": "Growing",
+        "evidence": "Íñigo used the Scratch debugger tools to step through his own code and locate exactly where it broke."
+      },
+      {
+        "session_date_iso": "2026-09-14",
+        "session_date": "14 September 2026",
+        "lesson_title": "Final Project Planning: The Robot Zoo",
+        "stage": "Secure",
+        "evidence": "Íñigo organised his project files sensibly and exported a backup copy of his work without being asked."
+      }
+    ]
+  },
+  "milestones": [
+    {
+      "session_date": "6 July 2026",
+      "session_date_iso": "2026-07-06",
+      "title": "First Scratch project built, saved, and reopened independently",
+      "detail": "Íñigo redesigned his sprite into a \"robot-saurus\" and learned to save and reopen the project himself, checking that his work was really still there."
+    },
+    {
+      "session_date": "17 August 2026",
+      "session_date_iso": "2026-08-17",
+      "title": "First program flashed onto real hardware (micro:bit)",
+      "detail": "Íñigo predicted what the micro:bit's LEDs would do before running the code, then flashed and ran it on the physical device himself."
+    },
+    {
+      "session_date": "21 September 2026",
+      "session_date_iso": "2026-09-21",
+      "title": "Robot Zoo: an independent, multi-concept final project",
+      "detail": "Íñigo ran his entire Robot Zoo showcase from start to finish independently, combining sprites, sensors, variables, and functions into one project he designed himself."
+    }
+  ],
+  "learning_profile": {
+    "based_on_sessions": 10,
+    "engages_best_when": "the task is hands-on and lets him build something specific and slightly silly, such as a robot dinosaur or a zoo, that he can show off afterwards.",
+    "responds_well_to": "comparing new coding ideas to something concrete he already knows, such as treating a function like a recipe card he can reuse instead of writing the same steps out every time.",
+    "often_curious_about": "what happens if he deliberately breaks a rule of the program, such as making a loop repeat far more times than intended, just to see what the computer does.",
+    "currently_trying": "explaining his plan out loud before he starts coding, rather than diving straight in and narrating only after something has already gone wrong."
+  },
+  "voice_quotes": [
+    {
+      "quote": "Íñigo announced that his laptop was officially \"the brain box\" from now on, because that's where all his code lives.",
+      "session_date": "13 July 2026",
+      "lesson_title": "Loops and the Dizzy Dinosaur"
+    },
+    {
+      "quote": "Íñigo described a stubborn coding error as \"a little gremlin hiding in the loop,\" and insisted on hunting it down himself before accepting help.",
+      "session_date": "24 August 2026",
+      "lesson_title": "Debugging Detective Day"
+    },
+    {
+      "quote": "Íñigo explained a function in his own words as \"a recipe card you can use again and again without writing it all out every time.\"",
+      "session_date": "7 September 2026",
+      "lesson_title": "Functions and the Robot Recipe"
+    }
+  ],
+  "sessions": [
+    {
+      "session_date": "21 September 2026",
+      "session_date_iso": "2026-09-21",
+      "lesson_title": "Robot Zoo Showcase and Reflection",
+      "subject": "Primary Robotics & Coding",
+      "summary": "Íñigo presented his finished Robot Zoo project end to end, combining sprites, sensors, variables, and functions, then reflected on what he was proudest of and what he would change next time.",
+      "aim": "To give Íñigo a genuine opportunity to run and explain a multi-concept project independently, and to help him reflect honestly on his own strengths and next steps.",
+      "big_win": "Íñigo ran his entire Robot Zoo showcase from start to finish independently, narrating what each part did without needing a single prompt.",
+      "next_priority": "Start planning a second project with a partner in mind, to begin practising explaining code to someone who has not seen it before.",
+      "current_unit": "Final project: Robot Zoo, drawing together sprites, sensors, variables, and functions from the whole course so far.",
+      "student_pacing": "Íñigo is on pace and has now completed his first full independent project within Primary Robotics & Coding.",
+      "lesson_engagement": "Proud, focused, and clearly excited to show his work; needed no redirection all lesson.",
+      "additional_notes": "Íñigo asked if he could name his next project \"Robot Zoo 2\" before this lesson had even finished.",
+      "student_voice": "Íñigo said the best part of building the Robot Zoo was \"making the gorilla robot roar right when someone gets too close,\" because he had worked out the sensor logic himself.",
+      "home_support": [
+        "Ask Íñigo to show you the Robot Zoo project and explain what happens when you get close to each animal.",
+        "Ask him which part of the project he is proudest of and why."
+      ],
+      "extension_task": "Add one more animal to the Robot Zoo with its own sensor-triggered behaviour, and write one sentence explaining how it works.",
+      "family_friendly_science_explanation": "Íñigo brought together everything he has learned so far, sprites that look and move like animals, sensors that react when something gets close, variables that keep track of information, and functions that let him reuse code, into one finished Robot Zoo project that he built and ran by himself.",
+      "ideas_we_are_refining": "None significant today; this was primarily a showcase and reflection lesson.",
+      "skills": [
+        {
+          "evidence": "Ran a complete, multi-part project independently from start to finish.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Clearly explained the purpose of each part of his project without prompting.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Reflected honestly on his own strengths and what he would change next time.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Running a finished multi-concept project independently",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Explaining his own code clearly to an audience",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Honest self-reflection on strengths and next steps",
+          "source_field": "strengths"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Practising explaining code to someone who has not seen the project before.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Planning a second project with another person's perspective in mind.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Start planning a second project with a partner in mind, to begin practising explaining code to someone who has not seen it before.",
+          "source_field": "next_priority"
+        }
+      ],
+      "resources": [
+        {
+          "title": "Scratch - Starter Projects",
+          "url": "https://scratch.mit.edu/starter_projects",
+          "note": "Useful for Íñigo to keep exploring beginner project ideas at home."
+        },
+        {
+          "title": "Code.org - Creative Coding Projects",
+          "url": "https://code.org/",
+          "note": "Good source of further guided coding projects at Íñigo's level."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "next_steps": [
+          "Explain the Robot Zoo project to a family member who has not seen it, from memory",
+          "Sketch one idea for a new sensor-triggered animal behaviour",
+          "Write two sentences reflecting on what was hardest about the project"
+        ],
+        "progress_since_last_update": "Íñigo moved from planning the Robot Zoo on paper into a fully working, independently run showcase."
+      }
+    },
+    {
+      "session_date": "14 September 2026",
+      "session_date_iso": "2026-09-14",
+      "lesson_title": "Final Project Planning: The Robot Zoo",
+      "subject": "Primary Robotics & Coding",
+      "summary": "Íñigo planned his final project, a \"Robot Zoo\" combining several animal sprites with sensor-triggered behaviours, sketching out his ideas before starting to build.",
+      "aim": "To help Íñigo plan a multi-part project on paper first, combining ideas from earlier lessons, before moving into building it in Scratch.",
+      "big_win": "Íñigo designed an original Robot Zoo concept from scratch, combining three animals and a keeper robot into one coherent, well-explained plan.",
+      "next_priority": "Begin building the first animal's sensor-triggered behaviour and check it works before adding the next one.",
+      "current_unit": "Final project: Robot Zoo, drawing together sprites, sensors, variables, and functions from the whole course so far.",
+      "student_pacing": "Íñigo is on pace and ready to begin building his final project next lesson.",
+      "lesson_engagement": "Highly engaged and full of ideas; needed occasional help narrowing his plan down to something buildable in the time available.",
+      "additional_notes": "Íñigo wanted to add six animals; we agreed on three plus a keeper robot to keep the project achievable.",
+      "student_voice": "Íñigo explained his plan as \"a zoo where the animals actually notice you, like real animals do, not just standing there.\"",
+      "home_support": [
+        "Ask Íñigo to describe his Robot Zoo plan and which animal he is most excited to build first.",
+        "Ask him why he chose sensor-triggered behaviours instead of animals that just move automatically."
+      ],
+      "extension_task": "Draw a simple diagram of the Robot Zoo layout, labelling which sensor triggers which animal's behaviour.",
+      "family_friendly_science_explanation": "Before building anything, Íñigo planned his final project on paper: which animals to include, what would trigger each one, and in what order he should build things so he could test each part as he went, a skill real programmers use on every project.",
+      "ideas_we_are_refining": "Íñigo initially wanted every animal to react to every sensor at once; we talked through why starting with one sensor per animal would be easier to test and fix.",
+      "skills": [
+        {
+          "evidence": "Designed an original multi-part project concept independently.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Talked through his plan step by step, checking in for feedback.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Accepted guidance to scope the project down to something achievable.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Original project design and planning",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Explaining a plan clearly before building it",
+          "source_field": "strengths"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Scoping an idea down to something achievable without losing enthusiasm.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Begin building the first animal's sensor-triggered behaviour and check it works before adding the next one.",
+          "source_field": "next_priority"
+        }
+      ],
+      "resources": [
+        {
+          "title": "Scratch - Starter Projects",
+          "url": "https://scratch.mit.edu/starter_projects",
+          "note": "Useful for browsing similar sensor-and-sprite project ideas."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "next_steps": [
+          "Build and test the first animal's sensor-triggered behaviour",
+          "Draw a labelled diagram of the Robot Zoo layout",
+          "List the order in which the remaining animals will be added"
+        ],
+        "progress_since_last_update": "Íñigo moved from individual sensor and function exercises into planning how to combine them into one original final project."
+      }
+    },
+    {
+      "session_date": "7 September 2026",
+      "session_date_iso": "2026-09-07",
+      "lesson_title": "Functions and the Robot Recipe",
+      "subject": "Primary Robotics & Coding",
+      "summary": "Íñigo learned what a function is by comparing it to a reusable recipe card, then rewrote a repetitive piece of his own code into two named functions.",
+      "aim": "To introduce functions as a way to avoid repeating code, using a recipe-card analogy, and to have Íñigo apply the idea to his own existing project.",
+      "big_win": "Íñigo independently identified a block of code he had repeated three times as a good candidate to turn into a function, without being prompted.",
+      "next_priority": "Practise deciding when a function is genuinely useful versus when a short repeated block is simpler to leave as it is.",
+      "current_unit": "Functions and code reuse, building toward the final Robot Zoo project.",
+      "student_pacing": "Íñigo is on pace and has now used functions successfully in his own project for the first time.",
+      "lesson_engagement": "Enthusiastic once he saw his own repeated code shrink after being turned into a function; needed a short recap of the recipe-card analogy partway through.",
+      "additional_notes": "Íñigo asked whether he could name every function after a dinosaur move, which we agreed was a fun and genuinely useful naming habit.",
+      "student_voice": "Íñigo explained a function in his own words as \"a recipe card you can use again and again without writing it all out every time.\"",
+      "home_support": [
+        "Ask Íñigo to explain what a function is using the recipe-card idea.",
+        "Ask him to show you the two functions he named and what each one does."
+      ],
+      "extension_task": "Find one repeated set of steps in a real recipe at home and explain why it would make a good \"function.\"",
+      "family_friendly_science_explanation": "A function is a named, reusable set of instructions, a bit like a recipe card you can pull out and use again whenever you need it, instead of rewriting the same steps every time. Íñigo took a piece of code he had repeated three times and turned it into two functions he named himself.",
+      "ideas_we_are_refining": "Íñigo initially wanted to turn every single line of code into its own function; we discussed how a function works best for a genuinely repeated group of steps, not every individual action.",
+      "skills": [
+        {
+          "evidence": "Correctly identified repeated code as suitable for a function without being told.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Named his functions sensibly and consistently.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Rewrote existing working code into a cleaner structure without breaking it.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Recognising repeated code as a candidate for a function",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Refactoring existing code without breaking its behaviour",
+          "source_field": "strengths"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Judging when a function is genuinely useful versus unnecessary.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Practise deciding when a function is genuinely useful versus when a short repeated block is simpler to leave as it is.",
+          "source_field": "next_priority"
+        }
+      ],
+      "resources": [
+        {
+          "title": "Code.org - Functions for Beginners",
+          "url": "https://code.org/",
+          "note": "Good follow-up practice for the function concept introduced today."
+        },
+        {
+          "title": "Scratch - Starter Projects",
+          "url": "https://scratch.mit.edu/starter_projects",
+          "note": "Useful for seeing how other simple projects reuse blocks of code."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "next_steps": [
+          "Rename one more repeated block of code into a function",
+          "Explain out loud why a function is useful before using one",
+          "Identify one place in an existing project where a function would NOT be a good fit, and explain why"
+        ],
+        "progress_since_last_update": "Íñigo moved from fixing individual bugs into actively restructuring his own working code to make it cleaner."
+      }
+    },
+    {
+      "session_date": "24 August 2026",
+      "session_date_iso": "2026-08-24",
+      "lesson_title": "Debugging Detective Day",
+      "subject": "Primary Robotics & Coding",
+      "summary": "Íñigo worked through a set of small, deliberately broken programs, using a step-by-step \"debugging detective\" method to find and fix each problem himself.",
+      "aim": "To give Íñigo a structured way to find and fix his own coding mistakes, rather than relying on being told exactly what went wrong.",
+      "big_win": "Íñigo chose to keep hunting for what he calls \"gremlins\" in his code independently for several minutes before asking for help.",
+      "next_priority": "Build a short personal debugging checklist he can use before asking for help on future projects.",
+      "current_unit": "Debugging strategies, applied to short deliberately broken example programs.",
+      "student_pacing": "Íñigo is on pace and has now used an independent debugging process successfully for the first time.",
+      "lesson_engagement": "Focused and determined, especially once he decided fixing bugs himself was more satisfying than being told the answer.",
+      "additional_notes": "Íñigo turned one bug fix into a creative redesign he preferred, and asked to keep his version rather than restoring the original.",
+      "student_voice": "Íñigo described a stubborn coding error as \"a little gremlin hiding in the loop,\" and insisted on hunting it down himself before accepting help.",
+      "home_support": [
+        "Ask Íñigo to explain his \"debugging detective\" steps in his own words.",
+        "Ask him about the bug he turned into a \"happy accident\" and what he changed."
+      ],
+      "extension_task": "Deliberately break one small part of an old project, then use the debugging steps from today to fix it again.",
+      "family_friendly_science_explanation": "Debugging means finding and fixing mistakes in code, and today Íñigo learned a step-by-step way to do this himself: check what should happen, check what is actually happening, then narrow down where the two differ. He used this method on several small broken programs today.",
+      "ideas_we_are_refining": "Íñigo occasionally wanted to rewrite an entire program rather than isolate the one broken part; we practised narrowing down to just the section causing the problem first.",
+      "skills": [
+        {
+          "evidence": "Used a structured debugging process independently on multiple broken programs.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Persisted with a difficult bug for several minutes before asking for help.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Turned an accidental bug into a deliberate creative choice.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Independent, structured debugging",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Persistence with a difficult problem before seeking help",
+          "source_field": "strengths"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Narrowing down to the specific broken section rather than rewriting everything.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Build a short personal debugging checklist he can use before asking for help on future projects.",
+          "source_field": "next_priority"
+        }
+      ],
+      "resources": [
+        {
+          "title": "Code.org - Debugging Basics",
+          "url": "https://code.org/",
+          "note": "Good further practice on the debugging method introduced today."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "next_steps": [
+          "Write a short personal debugging checklist in your own words",
+          "Deliberately break and then fix one small part of an old project",
+          "Explain the difference between what a program should do and what it is actually doing, using one example"
+        ],
+        "progress_since_last_update": "Íñigo moved from asking for help immediately when something broke into independently working through a structured debugging process."
+      }
+    },
+    {
+      "session_date": "17 August 2026",
+      "session_date_iso": "2026-08-17",
+      "lesson_title": "Intro to micro:bit and Simple Code",
+      "subject": "Primary Robotics & Coding",
+      "summary": "Íñigo was introduced to the micro:bit, a small physical computer, and wrote and flashed his first simple programs onto the real device, including a scrolling name and a light-up pattern.",
+      "aim": "To give Íñigo his first hands-on experience programming real physical hardware, moving beyond on-screen simulations, and to build his confidence flashing code onto a device.",
+      "big_win": "Íñigo predicted what the micro:bit's LEDs would do before running the code, then flashed and ran it on the physical device himself.",
+      "next_priority": "Try writing a program that reacts to the micro:bit being shaken or tilted, using its built-in sensors.",
+      "current_unit": "Physical computing with the micro:bit, moving beyond on-screen coding into real hardware.",
+      "student_pacing": "Íñigo is on pace and has now completed his first physical computing milestone.",
+      "lesson_engagement": "Delighted by seeing his own code control a real device; recovered well and independently from one failed upload.",
+      "additional_notes": "Íñigo wants to bring his own micro:bit-compatible battery pack next lesson so he can carry his project around.",
+      "student_voice": "Íñigo said holding the micro:bit and watching his own code light up felt \"like actually building a tiny robot, not just drawing one on the screen.\"",
+      "home_support": [
+        "Ask Íñigo to show you the pattern he programmed onto the micro:bit and explain how he made it.",
+        "Ask him what was different about coding for a real device compared to coding on the screen."
+      ],
+      "extension_task": "Design one new light-up pattern on paper first, then try to build it on the micro:bit next session.",
+      "family_friendly_science_explanation": "A micro:bit is a small, real computer about the size of a credit card with its own tiny screen of lights. Íñigo wrote code on his laptop and then \"flashed,\" or transferred, that code onto the real micro:bit device, seeing his instructions control actual hardware for the first time rather than just a character on a screen.",
+      "ideas_we_are_refining": "Íñigo was briefly unsure why one upload failed; we identified together that the cable had come loose, which was a hardware issue rather than a coding mistake.",
+      "skills": [
+        {
+          "evidence": "Correctly predicted LED behaviour before running the code.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Flashed his own code onto real hardware independently.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Recovered from a failed upload by identifying the cause himself.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Predicting program behaviour before running it",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Working confidently with real physical hardware",
+          "source_field": "strengths"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Using the micro:bit's built-in sensors, such as shake and tilt detection.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Try writing a program that reacts to the micro:bit being shaken or tilted, using its built-in sensors.",
+          "source_field": "next_priority"
+        }
+      ],
+      "resources": [
+        {
+          "title": "micro:bit Foundation - Let's Code",
+          "url": "https://microbit.org/code/",
+          "note": "Official beginner-friendly micro:bit coding projects Íñigo can try at home."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "next_steps": [
+          "Design a light-up pattern on paper before building it",
+          "Try a simple shake-detection program on the micro:bit",
+          "Explain to a family member what \"flashing\" code onto a device means"
+        ],
+        "progress_since_last_update": "Íñigo moved from on-screen Scratch projects into his first physical computing project on real hardware."
+      }
+    },
+    {
+      "session_date": "3 August 2026",
+      "session_date_iso": "2026-08-03",
+      "lesson_title": "Variables and the Score Keeper Game",
+      "subject": "Primary Robotics & Coding",
+      "summary": "Íñigo learned what a variable is by building a simple score-keeping system for his own mini-game, tracking points that went up when his sprite reached a target.",
+      "aim": "To introduce variables as a way of storing and updating information, using a scorekeeping system Íñigo could see and test immediately.",
+      "big_win": "Íñigo explained his scorekeeping idea clearly enough that I could follow his whole plan before he had written a single line of code.",
+      "next_priority": "Add a second variable, such as a timer or lives counter, and have the two variables interact with each other.",
+      "current_unit": "Variables, applied to a self-built score-keeping mini-game.",
+      "student_pacing": "Íñigo is on pace and has now successfully used a variable in a working game for the first time.",
+      "lesson_engagement": "Highly engaged, particularly once the score counter visibly updated on screen for the first time.",
+      "additional_notes": "Íñigo wants his next game to include a \"high score\" that is remembered between games, which is a good hook for a future lesson.",
+      "student_voice": "Íñigo explained his score variable as \"a little box that remembers a number for me so I don't have to,\" a phrase he came up with himself.",
+      "home_support": [
+        "Ask Íñigo to explain what a variable is using his \"little box that remembers a number\" idea.",
+        "Ask him to show you his score-keeping game and explain what makes the score go up."
+      ],
+      "extension_task": "Think of one other thing in a favourite game that might be stored as a variable, such as lives, time, or coins, and explain why.",
+      "family_friendly_science_explanation": "A variable is a labelled place in a program where information can be stored and changed while the program runs, such as a player's score. Íñigo built a simple game where reaching a target made a score variable go up, and watched the number update live on the screen as he played.",
+      "ideas_we_are_refining": "Íñigo initially expected the score to reset automatically every time he clicked the green flag; we discussed why a variable needs to be deliberately reset in code rather than doing so on its own.",
+      "skills": [
+        {
+          "evidence": "Explained a full plan clearly before writing any code.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Successfully implemented a working variable-based score system.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Came up with his own clear explanation for what a variable does.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Planning a project verbally before coding it",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Using variables to track changing information",
+          "source_field": "strengths"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Understanding that variables must be deliberately reset rather than resetting automatically.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Add a second variable, such as a timer or lives counter, and have the two variables interact with each other.",
+          "source_field": "next_priority"
+        }
+      ],
+      "resources": [
+        {
+          "title": "Scratch - Starter Projects",
+          "url": "https://scratch.mit.edu/starter_projects",
+          "note": "Useful for browsing other simple games that use a score variable."
+        },
+        {
+          "title": "Khan Academy - Intro to Programming",
+          "url": "https://www.khanacademy.org/computing/intro-to-programming",
+          "note": "A free, structured set of beginner programming lessons at Íñigo's level."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "next_steps": [
+          "Add a second variable, such as a lives counter or timer, to the game",
+          "Explain why a variable needs to be reset deliberately in code",
+          "Describe one other game element that could be stored as a variable"
+        ],
+        "progress_since_last_update": "Íñigo moved from reacting to sensors into storing and updating his own information with variables for the first time."
+      }
+    },
+    {
+      "session_date": "27 July 2026",
+      "session_date_iso": "2026-07-27",
+      "lesson_title": "Building a Traffic Light Circuit",
+      "subject": "Primary Robotics & Coding",
+      "summary": "Íñigo coded a simple traffic light sequence, timing red, amber, and green correctly, then extended it with an extra state of his own invention.",
+      "aim": "To help Íñigo build and correctly time a multi-step sequence, using a traffic light as a clear, familiar real-world example.",
+      "big_win": "Without being asked, Íñigo decided the traffic light needed a fourth state and built it himself before showing me.",
+      "next_priority": "Explain why the order and timing of each light matters for safety, connecting the code back to the real-world reason it exists.",
+      "current_unit": "Sequencing and timing, using a traffic light system as the guiding example.",
+      "student_pacing": "Íñigo is on pace and has extended a taught example independently for the first time.",
+      "lesson_engagement": "Playful and inventive throughout, especially once he started designing his own extra light state.",
+      "additional_notes": "Íñigo named his invented light \"turbo green\" and gave it its own short, faster timing, which worked correctly once tested.",
+      "student_voice": "Íñigo explained his invented light as being for \"cars that are already going the right speed and don't need to slow down at all.\"",
+      "home_support": [
+        "Ask Íñigo to explain the order of a normal traffic light and why that order matters.",
+        "Ask him about his invented \"turbo green\" light and how he decided on its timing."
+      ],
+      "extension_task": "Look at a real traffic light near home and time roughly how long each colour lasts, then compare it to the program built today.",
+      "family_friendly_science_explanation": "Íñigo coded a traffic light sequence, showing red, then amber, then green in the correct order for the correct amount of time. He then went further, inventing and building an extra light state of his own, showing he understood the underlying pattern well enough to extend it safely.",
+      "ideas_we_are_refining": "Íñigo initially set every light's timing to be the same length; we discussed why red usually lasts longer than amber for safety reasons in real traffic lights.",
+      "skills": [
+        {
+          "evidence": "Correctly sequenced and timed a multi-step program.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Extended a taught example with his own original addition.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Tested and correctly timed his own invented addition.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Building and timing a correct sequence",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Extending a taught structure with an original idea",
+          "source_field": "strengths"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Connecting code timing decisions back to real-world safety reasons.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Explain why the order and timing of each light matters for safety, connecting the code back to the real-world reason it exists.",
+          "source_field": "next_priority"
+        }
+      ],
+      "resources": [
+        {
+          "title": "BBC Bitesize - Algorithms and Sequencing",
+          "url": "https://www.bbc.co.uk/bitesize/topics/z3tbwmn",
+          "note": "Useful for reinforcing the sequencing ideas used in today's traffic light project."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "next_steps": [
+          "Time a real traffic light near home and compare it to the program",
+          "Explain why red usually lasts longer than amber",
+          "Add one more invented light state and justify its timing"
+        ],
+        "progress_since_last_update": "Íñigo moved from reacting to individual sensor events into building and correctly timing a full multi-step sequence."
+      }
+    },
+    {
+      "session_date": "20 July 2026",
+      "session_date_iso": "2026-07-20",
+      "lesson_title": "Sensors and If-Then Thinking",
+      "subject": "Primary Robotics & Coding",
+      "summary": "Íñigo learned how if-then logic lets a program react to a sensor, building a project where his sprite changed behaviour whenever it touched a target.",
+      "aim": "To introduce if-then logic as the way programs make decisions based on sensor input, using a touch-triggered example Íñigo could test immediately.",
+      "big_win": "Íñigo reasoned through the if-then logic a sensor needed before I demonstrated it, getting the general shape right on his first attempt.",
+      "next_priority": "Practise combining two conditions in a single if-then block, such as touching a target AND a key being pressed.",
+      "current_unit": "If-then logic and sensor input, building toward more complex conditional behaviour.",
+      "student_pacing": "Íñigo is on pace and has now used sensor-based if-then logic successfully for the first time.",
+      "lesson_engagement": "Focused and curious, asking several genuine \"what if\" questions about what would happen with different sensor setups.",
+      "additional_notes": "Íñigo wanted to know if a sensor could detect colour as well as touch, which is a good hook for a future lesson.",
+      "student_voice": "Íñigo described if-then logic as \"like the computer asking a yes or no question before it decides what to do.\"",
+      "home_support": [
+        "Ask Íñigo to explain if-then logic using his \"yes or no question\" idea.",
+        "Ask him what his sprite does when it touches the target in his project."
+      ],
+      "extension_task": "Think of one everyday decision, such as \"if it's raining, then take an umbrella,\" and explain how that is similar to if-then code.",
+      "family_friendly_science_explanation": "If-then logic is how a program decides what to do based on something it can sense, like asking \"if this happens, then do that.\" Íñigo built a project where his sprite reacted differently depending on whether it was touching a target, seeing the sensor and the decision work together for the first time.",
+      "ideas_we_are_refining": "Íñigo initially expected the sprite to react even when not touching the target; we worked through why the condition had to be true first before the action would happen.",
+      "skills": [
+        {
+          "evidence": "Reasoned through new if-then logic before it was demonstrated.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Connected a sensor block into his program correctly on the first attempt.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Asked genuine extending questions about sensor possibilities.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Reasoning through conditional logic independently",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Connecting sensor input to program behaviour",
+          "source_field": "strengths"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Combining two conditions within a single if-then block.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Practise combining two conditions in a single if-then block, such as touching a target AND a key being pressed.",
+          "source_field": "next_priority"
+        }
+      ],
+      "resources": [
+        {
+          "title": "Code.org - Conditionals for Beginners",
+          "url": "https://code.org/",
+          "note": "Good further practice on the if-then logic introduced today."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "next_steps": [
+          "Combine two conditions in one if-then block",
+          "Explain the \"yes or no question\" idea using a real-life example",
+          "Test what happens when the condition is never true"
+        ],
+        "progress_since_last_update": "Íñigo moved from simple loops into his first project that reacts to a sensor using if-then logic."
+      }
+    },
+    {
+      "session_date": "13 July 2026",
+      "session_date_iso": "2026-07-13",
+      "lesson_title": "Loops and the Dizzy Dinosaur",
+      "subject": "Primary Robotics & Coding",
+      "summary": "Íñigo learned how loops repeat actions, building a project where his robot-saurus sprite spun in a circle a set number of times.",
+      "aim": "To introduce loops as a way of repeating an action without writing it out multiple times, using a spinning sprite Íñigo could adjust and test.",
+      "big_win": "Once shown one loop, Íñigo kept adjusting the repeat count on his own for several minutes after I stepped back, testing what happened.",
+      "next_priority": "Try nesting one loop inside another and predict what will happen before running it.",
+      "current_unit": "Loops and repetition, building on the sprite work from the previous lesson.",
+      "student_pacing": "Íñigo is on pace and has now used a loop successfully in his own project for the first time.",
+      "lesson_engagement": "Delighted and giggly throughout, especially once the repeat count got large enough to make the sprite spin very fast.",
+      "additional_notes": "Íñigo announced that his laptop was officially \"the brain box\" from now on, because that's where all his code lives.",
+      "student_voice": "Íñigo announced that his laptop was officially \"the brain box\" from now on, because that's where all his code lives.",
+      "home_support": [
+        "Ask Íñigo to explain what a loop does using his spinning robot-saurus.",
+        "Ask him what happened when he made the repeat count very large."
+      ],
+      "extension_task": "Think of one everyday action you do more than once in a row, such as brushing each tooth, and explain how a loop could describe it.",
+      "family_friendly_science_explanation": "A loop lets a computer repeat an action a set number of times without the instructions being written out again and again. Íñigo built a project where his robot-saurus sprite spun in a circle, then experimented with changing how many times it repeated.",
+      "ideas_we_are_refining": "Íñigo initially expected a very large repeat count to make the sprite spin \"forever\"; we discussed why the loop still stops once it reaches its set number.",
+      "skills": [
+        {
+          "evidence": "Used a loop successfully in his own project for the first time.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Independently experimented with different repeat counts after being shown one example.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Asked his first genuine clarifying question about how loops counted.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Using loops to repeat an action",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Independent experimentation once a first example is shown",
+          "source_field": "strengths"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Understanding that a loop still stops once it reaches its set number, even if that number is very large.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Try nesting one loop inside another and predict what will happen before running it.",
+          "source_field": "next_priority"
+        }
+      ],
+      "resources": [
+        {
+          "title": "Scratch - Starter Projects",
+          "url": "https://scratch.mit.edu/starter_projects",
+          "note": "Useful for exploring more simple loop-based projects at home."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "next_steps": [
+          "Try nesting one loop inside another",
+          "Predict what a very large repeat count will do before running it",
+          "Describe one everyday repeated action as if it were a loop"
+        ],
+        "progress_since_last_update": "Íñigo moved from a single static sprite into his first project using repetition through a loop."
+      }
+    },
+    {
+      "session_date": "6 July 2026",
+      "session_date_iso": "2026-07-06",
+      "lesson_title": "Meet Scratch and My First Sprite",
+      "subject": "Primary Robotics & Coding",
+      "summary": "Íñigo was introduced to the Scratch coding environment, designed and personalised his own sprite, and learned the basic \"when green flag clicked\" block needed to make it move.",
+      "aim": "To give Íñigo a first, friendly introduction to block-based coding in Scratch, and to build his confidence saving and reopening his own project.",
+      "big_win": "Íñigo redesigned his sprite into what he called a \"robot-saurus,\" merging a dinosaur costume with mechanical parts he drew himself.",
+      "next_priority": "Use a loop to repeat a movement, rather than clicking the same block over and over.",
+      "current_unit": "Introduction to Scratch and block-based coding, the starting point for the whole Primary Robotics & Coding course.",
+      "student_pacing": "Íñigo is on pace at the very start of the Primary Robotics & Coding course.",
+      "lesson_engagement": "Excited and fully engaged, especially during the sprite design section.",
+      "additional_notes": "This was Íñigo's first lesson in the course, so most of the time was spent on orientation and building confidence with the interface.",
+      "student_voice": "Íñigo proudly named his invented creature a \"robot-saurus\" and explained that it needed both claws and a control panel to be complete.",
+      "home_support": [
+        "Ask Íñigo to show you his robot-saurus sprite and explain how he designed it.",
+        "Ask him what block he had to use before his sprite would move at all."
+      ],
+      "extension_task": "Draw a second sprite idea on paper that Íñigo could try building in Scratch next lesson.",
+      "family_friendly_science_explanation": "Scratch is a beginner-friendly coding tool where you snap together blocks of instructions instead of typing code. Íñigo designed and personalised his own on-screen character, called a sprite, and learned that it needed a \"when green flag clicked\" block before any of his other instructions would actually run.",
+      "ideas_we_are_refining": "Íñigo initially expected his sprite to move as soon as he added a movement block, without realising it also needed a starting block first; this was resolved quickly once tested.",
+      "skills": [
+        {
+          "evidence": "Designed and personalised an original sprite.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Worked out why a starting block was needed before movement blocks would run.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Learned to save and reopen his own project independently.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Personalising and designing a digital character",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Reasoning through why a program needs a starting instruction",
+          "source_field": "strengths"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Using repetition instead of clicking the same block many times.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Use a loop to repeat a movement, rather than clicking the same block over and over.",
+          "source_field": "next_priority"
+        }
+      ],
+      "resources": [
+        {
+          "title": "Scratch - Starter Projects",
+          "url": "https://scratch.mit.edu/starter_projects",
+          "note": "A good source of further beginner project ideas for Íñigo to try at home."
+        },
+        {
+          "title": "Khan Academy - Intro to Programming",
+          "url": "https://www.khanacademy.org/computing/intro-to-programming",
+          "note": "A free, structured set of beginner programming lessons Íñigo can explore at his own pace."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "next_steps": [
+          "Design a second sprite idea on paper",
+          "Explain why a \"when green flag clicked\" block is needed",
+          "Save and reopen the project independently at home"
+        ],
+        "progress_since_last_update": "This was Íñigo's very first lesson in the Primary Robotics & Coding course."
+      }
+    }
+  ]
+}</script>
+<script>
+const DISCLAIMER = "This is a voluntary teaching resource created by Mr. Guevara to add as much value as possible for families and students. It is not a requirement of Crimson Global Academy, and other teachers may not provide anything similar — this is not part of what CGA officially offers. Please refer to the Learning Lab as the official Crimson Global Academy resource, where assignments, grades, deadlines, and formal progress reports are provided. The information here is supplementary and is not part of any official session report or progress report sent by the school.";
+
+const LINKEDIN_URL = "https://www.linkedin.com/in/diego-urrutia-guevara-150bb641/";
+
+const data = JSON.parse(document.getElementById('dashboard-v2-data').textContent);
+const name = data.student_first_name || "the student";
+
+function esc(s){
+  return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/* Some upstream data fields that are meant to be a list of short phrases were
+   saved either as a real JS/JSON array, OR (a data bug seen in a few student
+   files) as a single string holding a Python-repr list literal such as
+   "['phrase one', 'phrase two']". Both must render as natural prose, never as
+   raw bracket/quote syntax. This helper normalises either shape into a plain
+   array of strings; a normal sentence-shaped string is returned unchanged. */
+function parsePyListLiteral(str){
+  const trimmed = String(str).trim();
+  if (!/^\[[\s\S]*\]$/.test(trimmed)) return null;
+  const inner = trimmed.slice(1, -1).trim();
+  if (!inner) return [];
+  const parts = inner.split(/['"]\s*,\s*['"]/);
+  return parts.map(p => p.replace(/^\s*['"]/, "").replace(/['"]\s*$/, "").trim()).filter(Boolean);
+}
+
+function toArrayOfStrings(v){
+  if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean);
+  if (typeof v === "string") {
+    const parsed = parsePyListLiteral(v);
+    if (parsed !== null) return parsed;
+  }
+  return null;
+}
+
+/* Join a list of short phrases into flowing prose: "a", "a and b", or
+   "a, b, and c". Returns "" for an empty/missing list so callers can hide
+   the field entirely instead of showing empty punctuation. */
+function joinProse(arr){
+  if (!arr || !arr.length) return "";
+  if (arr.length === 1) return arr[0];
+  if (arr.length === 2) return `${arr[0]} and ${arr[1]}`;
+  return `${arr.slice(0, -1).join(", ")}, and ${arr[arr.length - 1]}`;
+}
+
+/* Renders any field that might be a plain string, a real array, or the
+   Python-repr-list-as-string bug as clean prose text (HTML-escaped). */
+/* Capitalizes the first letter of a joined/flowing sentence without
+   touching the rest of the string (so mid-sentence proper nouns etc. are
+   left alone). Safe to call on an already-capitalized or empty string. */
+function capitalizeFirst(s){
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function proseField(v){
+  const asArray = toArrayOfStrings(v);
+  if (asArray !== null) return capitalizeFirst(esc(joinProse(asArray)));
+  return capitalizeFirst(esc(v || ""));
+}
+
+function footerHtml(){
+  return `<footer class="disclaimer">${esc(DISCLAIMER)}</footer>`;
+}
+
+const TARGET_ICON = `<svg class="target-icon" viewBox="0 0 64 64" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="32" cy="32" r="27" fill="none" stroke="currentColor" stroke-width="4" opacity=".35"/>
+  <circle cx="32" cy="32" r="15" fill="none" stroke="currentColor" stroke-width="4" opacity=".55"/>
+  <circle cx="32" cy="32" r="4" fill="currentColor"/>
+</svg>`;
+
+function eyebrow(label){
+  return `<div class="eyebrow-label">${TARGET_ICON}${esc(label)}</div>`;
+}
+
+/* ---------------- OVERVIEW TAB ---------------- */
+function pickHeadlineQuote(latest, quotes){
+  const placeholder = /student reflection to capture/i;
+  const lv = latest && latest.student_voice ? String(latest.student_voice).trim() : "";
+  if (lv && !placeholder.test(lv)) {
+    return { quote: lv, session_date: latest.session_date, lesson_title: latest.lesson_title };
+  }
+  if (quotes && quotes.length) return quotes[0];
+  return null;
+}
+
+function renderOverview(){
+  const s = data.stats || {};
+  const latest = data.sessions[0] || {};
+  const quotes = data.voice_quotes || [];
+  const latestDate = latest.session_date || "";
+  const headlineQuote = pickHeadlineQuote(latest, quotes);
+
+  let html = `
+    ${eyebrow("Overview")}
+    <h2 class="panel-title">Overview</h2>
+    <p class="panel-sub">A quick snapshot of ${esc(name)}'s learning journey so far.</p>
+    <div class="stat-row">
+      <div class="stat"><div class="num">${s.sessions_logged ?? 0}</div><div class="label">Sessions logged</div></div>
+      <div class="stat"><div class="num">${s.distinct_skills_tried ?? 0}</div><div class="label">Distinct skills tried</div></div>
+      <div class="stat"><div class="num">${s.milestones_hit ?? 0}</div><div class="label">Milestones hit</div></div>
+    </div>
+    <div class="focus-row">
+      <div class="focus-card win"><div class="eyebrow">Big win</div>${esc(latest.big_win || "")}</div>
+      <div class="focus-card tonight"><div class="eyebrow">Try tonight</div>${esc((latest.home_support && latest.home_support[0]) || "")}</div>
+      <div class="focus-card edge"><div class="eyebrow">Growing edge</div>${esc((latest.growing_next && latest.growing_next[0] && latest.growing_next[0].evidence) || "")}</div>
+    </div>
+    ${headlineQuote ? `
+    <div class="focus-card voice" style="border-left:4px solid var(--accent);background:var(--accent-wash);margin-bottom:18px;">
+      <div class="eyebrow">In ${esc(name)}'s own words</div>
+      <blockquote style="margin:2px 0 6px;font-family:var(--font-display);font-size:1.1rem;font-style:italic;color:var(--ink);">&ldquo;${esc(headlineQuote.quote)}&rdquo;</blockquote>
+      <div class="interp" style="font-size:0.85rem;color:var(--ink-2);">From "${esc(headlineQuote.lesson_title || "")}" (${esc(headlineQuote.session_date || "")})</div>
+    </div>` : ""}
+    <div class="card">
+      <h3>Since we last looked</h3>
+      <p>${latestDate ? `<strong>As of ${esc(latestDate)}</strong> — ` : ""}${esc(latest.raw_session && latest.raw_session.progress_since_last_update && Array.isArray(latest.raw_session.progress_since_last_update) ? latest.raw_session.progress_since_last_update[0] : (latest.raw_session ? latest.raw_session.progress_since_last_update : "") || "")}</p>
+    </div>
+    <div class="card">
+      <h3>What this lesson was about</h3>
+      <p>${latestDate ? `<strong>As of ${esc(latestDate)}</strong> — ` : ""}${esc(latest.family_friendly_science_explanation || latest.summary || "")}</p>
+    </div>
+    <div class="card">
+      <h3>More in ${esc(name)}'s own words</h3>
+      ${quotes.map(q => `
+        <div class="quote-card">
+          <blockquote>&ldquo;${esc(q.quote)}&rdquo;</blockquote>
+          <div class="interp">From "${esc(q.lesson_title)}" (${esc(q.session_date)}) — this shows ${esc(name)} thinking in their own terms, not just repeating a definition.</div>
+        </div>`).join("")}
+    </div>
+  `;
+  document.getElementById('tab-overview').innerHTML = html + footerHtml();
+}
+
+/* ---------------- PROGRESS TAB (chart) ---------------- */
+const STAGE_Y = {Emerging: 3, Developing: 2, Growing: 1, Secure: 0};
+const STAGE_RANK = {Emerging: 0, Developing: 1, Growing: 2, Secure: 3};
+const STAGE_BY_RANK = ["Emerging", "Developing", "Growing", "Secure"];
+// A small categorical palette assigned by thread INDEX (not by name), so it
+// works for any student's thread names. Chosen for strong hue separation
+// (blue / rust-orange / violet / mustard-gold) rather than shades of one
+// colour, while staying muted/earthy so it still sits inside the warm,
+// cream "earth" theme. Distinct in both hue and lightness so the lines
+// stay tellable apart for common red-green colour vision deficiencies too.
+const THREAD_PALETTE = ["#2A6F8F", "#B5551F", "#6B4C9A", "#B58900"];
+function colorForThread(index){
+  return THREAD_PALETTE[index % THREAD_PALETTE.length];
+}
+const LINE_COL = "#1D211C24";
+const INK2 = "#4A5148";
+const INK3 = "#757C72";
+
+function shortDate(iso){
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-GB", {day:"numeric", month:"short"});
+}
+
+function buildChartSVG(threads){
+  const W = 780, H = 300, padL = 140, padR = 20, padT = 20, padB = 46;
+  const allDates = [...new Set(Object.values(threads).flat().map(p => p.session_date_iso))].sort();
+  const x = d => {
+    const idx = allDates.indexOf(d);
+    const n = Math.max(allDates.length - 1, 1);
+    return padL + (idx / n) * (W - padL - padR);
+  };
+  const rowH = (H - padT - padB) / 4;
+  const y = stage => padT + STAGE_Y[stage] * rowH + rowH / 2;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-ui),sans-serif">`;
+
+  // Stage rows: qualitative stage NAMES are the only y-axis labels, never numbers.
+  ["Secure","Growing","Developing","Emerging"].forEach((stage, i) => {
+    const yy = padT + i * rowH + rowH / 2;
+    svg += `<line x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}" stroke="${LINE_COL}" stroke-width="1" stroke-dasharray="3 5"/>`;
+    svg += `<text x="8" y="${yy + 4}" font-size="12" fill="${INK2}" font-weight="700">${stage}</text>`;
+  });
+
+  // Dated x-axis: a step line under the plot with a dashed tick per session date.
+  const axisY = padT + 4 * rowH;
+  svg += `<line x1="${padL}" y1="${axisY}" x2="${W - padR}" y2="${axisY}" stroke="${LINE_COL}" stroke-width="1"/>`;
+  allDates.forEach(d => {
+    const px = x(d);
+    svg += `<line x1="${px}" y1="${axisY}" x2="${px}" y2="${axisY + 6}" stroke="${LINE_COL}" stroke-width="1" stroke-dasharray="2 3"/>`;
+    svg += `<text x="${px}" y="${axisY + 22}" font-size="10" fill="${INK3}" text-anchor="middle" transform="rotate(0 ${px} ${axisY+22})" font-family="var(--font-data),monospace">${shortDate(d)}</text>`;
+  });
+
+  let pointId = 0;
+  const points = [];
+  Object.entries(threads).forEach(([threadName, pts], threadIndex) => {
+    const color = colorForThread(threadIndex);
+    const sorted = [...pts].sort((a,b) => a.session_date_iso.localeCompare(b.session_date_iso));
+    // Step line (not a smooth diagonal): holds the current stage until the
+    // next dated observation, which better reflects a qualitative plateau.
+    let path = "";
+    sorted.forEach((p, i) => {
+      const px = x(p.session_date_iso), py = y(p.stage);
+      if (i === 0) { path += `M${px},${py} `; }
+      else {
+        const prevPx = x(sorted[i-1].session_date_iso);
+        path += `L${px},${y(sorted[i-1].stage)} L${px},${py} `;
+      }
+    });
+    svg += `<path d="${path.trim()}" fill="none" stroke="${color}" stroke-width="2.5" opacity="0.85"/>`;
+    sorted.forEach(p => {
+      const px = x(p.session_date_iso), py = y(p.stage);
+      const id = "pt" + (pointId++);
+      points.push({id, threadName, ...p});
+      svg += `<circle cx="${px}" cy="${py}" r="5" fill="${color}" stroke="${'#FBF9F3'}" stroke-width="1.5" style="cursor:pointer" onclick="showEvidence('${id}')"/>`;
+    });
+  });
+  svg += `</svg>`;
+  window.__chartPoints = points;
+  return svg;
+}
+
+function showEvidence(id){
+  const p = (window.__chartPoints || []).find(pt => pt.id === id);
+  const el = document.getElementById('evidence-pop');
+  if (!el || !p) return;
+  el.innerHTML = `<strong>${esc(p.threadName)} — ${esc(p.stage)}</strong> (${esc(p.session_date)}, "${esc(p.lesson_title)}")<br>${esc(p.evidence)}`;
+  el.classList.add('show');
+  el.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+function renderProgress(){
+  const threads = data.skill_threads || {};
+  const lp = data.learning_profile || {};
+  const milestones = data.milestones || [];
+
+  let legend = Object.keys(threads).map((k, i) =>
+    `<span><span class="legend-dot" style="background:${colorForThread(i)}"></span>${esc(k)}</span>`
+  ).join(" &nbsp; ");
+
+  let html = `
+    ${eyebrow("Progress")}
+    <h2 class="panel-title">Progress</h2>
+    <p class="panel-sub">These are Mr. Guevara's qualitative professional observations from lessons, not a score or grade. Click any point on the chart for the evidence it is drawn from.</p>
+    <div class="card chart-card">
+      <h3>Skills over time (qualitative stages)</h3>
+      ${buildChartSVG(threads)}
+      <div class="chart-legend">${legend}</div>
+      <div id="evidence-pop" class="evidence-pop"></div>
+    </div>
+    <div class="card">
+      <h3>Moments that mattered</h3>
+      ${milestones.map(m => `
+        <div class="milestone">
+          <div class="dot"></div>
+          <div>
+            <div class="date">${esc(m.session_date)}</div>
+            <strong>${esc(m.title)}</strong>
+            <div>${esc(m.detail)}</div>
+          </div>
+        </div>`).join("")}
+    </div>
+    <div class="card">
+      <h3>Learning profile</h3>
+      <div class="profile-grid" style="margin-top:10px;">
+        ${[
+          ["Engages best when", lp.engages_best_when],
+          ["Responds well to", lp.responds_well_to],
+          ["Often curious about", lp.often_curious_about],
+          ["Currently trying", lp.currently_trying],
+        ].map(([label, value]) => {
+          const text = proseField(value);
+          if (!text) return "";
+          return `<div class="item"><div class="k">${esc(label)}</div>${text}</div>`;
+        }).join("")}
+      </div>
+    </div>
+  `;
+  document.getElementById('tab-progress').innerHTML = html + footerHtml();
+}
+
+/* ---------------- HELP AT HOME TAB ---------------- */
+function renderHelpAtHome(){
+  const latest = data.sessions[0] || {};
+  const askQuestions = (latest.raw_session && latest.raw_session.next_steps) || [];
+  let html = `
+    ${eyebrow("Help at Home")}
+    <h2 class="panel-title">Help at Home</h2>
+    <p class="panel-sub">This is optional and conversational, not homework — a few ideas if a moment naturally comes up at home.</p>
+    <div class="card">
+      <h3>Ask ${esc(name)}</h3>
+      <ul class="plain">
+        ${askQuestions.slice(0,3).map(q => `<li>${esc(q)}</li>`).join("")}
+      </ul>
+    </div>
+    <div class="card">
+      <h3>This week's home-support idea</h3>
+      <ul class="plain">${(latest.home_support || []).map(h => `<li>${esc(h)}</li>`).join("")}</ul>
+    </div>
+    <div class="card">
+      <h3>Resources from the latest session</h3>
+      ${(latest.resources || []).map(r => `
+        <div class="resource-link">
+          <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>
+          <div class="note">${esc(r.note)}</div>
+        </div>`).join("")}
+    </div>
+  `;
+  document.getElementById('tab-helpathome').innerHTML = html + footerHtml();
+}
+
+/* ---------------- SESSIONS TAB ---------------- */
+function renderSessions(){
+  const sessions = data.sessions || [];
+  let html = `
+    ${eyebrow("Sessions")}
+    <h2 class="panel-title">Sessions</h2>
+    <p class="panel-sub">Full chronological session history, newest first. Click any session to expand it.</p>
+  `;
+  sessions.forEach(s => {
+    html += `
+      <details class="session">
+        <summary>${esc(s.lesson_title)}<span class="sdate">${esc(s.session_date)}</span></summary>
+        <div class="session-body">
+          <h4>Summary</h4><p>${esc(s.summary)}</p>
+          <h4>Strengths / glows</h4>
+          <ul class="plain">${(s.skills || []).map(sk => `<li>${esc(sk.evidence)}</li>`).join("")}</ul>
+          <h4>Growing next</h4>
+          <ul class="plain">${(s.growing_next || []).map(g => `<li>${esc(g.evidence)}</li>`).join("")}</ul>
+          <h4>Resources</h4>
+          ${(s.resources || []).map(r => `<div class="resource-link"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a><div class="note">${esc(r.note)}</div></div>`).join("")}
+        </div>
+      </details>
+    `;
+  });
+  document.getElementById('tab-sessions').innerHTML = html + footerHtml();
+}
+
+/* ---------------- ABOUT TAB ---------------- */
+function renderAbout(){
+  const chips = ["Primary &amp; Secondary","IGCSE &middot; A-Level &middot; US Diploma","UK &middot; Spain &middot; New Zealand","Students on 4 continents","Teacher training"];
+  const html = `
+    ${eyebrow("About")}
+    <h2 class="panel-title">About Mr. Guevara</h2>
+    <p class="panel-sub">The teacher behind this dashboard.</p>
+    <div class="card about-hero">
+      ${eyebrow("The teacher behind this dashboard")}
+      <div class="about-photo-wrap">
+        <img class="about-photo" src="https://educadug.github.io/discovery-lab/about/diego.jpg?v=2" alt="Diego Urrutia Guevara" loading="lazy">
+      </div>
+      <h3 class="about-heading">Diego Urrutia Guevara</h3>
+      <p class="about-subheading">Studied in Norway, Spain and New Zealand. Taught in the UK, Spain and New Zealand. Now teaching students across four continents.</p>
+      <div class="about-chip-row">${chips.map(c => `<span class="about-chip">${c}</span>`).join("")}</div>
+      <a class="btn-linkedin" href="${esc(LINKEDIN_URL)}" target="_blank" rel="noopener noreferrer">Connect on LinkedIn</a>
+    </div>
+    <div class="card">
+      <h3>About Diego</h3>
+      <p>Diego's classroom has never had one nationality in it. He studied in Norway, Spain and New Zealand, taught in both private and state schools in the United Kingdom and Spain, and now teaches from New Zealand to students in Europe, the United States, Japan, China, Southeast Asia and Australia.</p>
+      <p>That range is not a travel list — it is the substance of how he teaches. Students arrive from different school systems, different languages and very different ideas of what a good answer looks like. Teaching all of them well means building lessons around thinking rather than around the habits of any single curriculum.</p>
+      <p>Before and alongside education, Diego worked in international consultancy and biodiversity. He believes students learn best when knowledge is connected to real problems, investigation, decision-making and the world beyond the classroom.</p>
+      <p>Running through all of it is a particular interest in the thoughtful use of technology and AI in education. Discovery Lab is where that becomes something you can click: simulations and investigations where students experiment, decide, test ideas and learn by doing.</p>
+    </div>
+    <div class="card about-closing">
+      <h3>Full background and experience</h3>
+      <p>Qualifications, teaching history and professional work are all on LinkedIn. Connect there, or get in touch.</p>
+      <a class="btn-linkedin" href="${esc(LINKEDIN_URL)}" target="_blank" rel="noopener noreferrer">View LinkedIn profile</a>
+    </div>
+  `;
+  document.getElementById('tab-about').innerHTML = html + footerHtml();
+}
+
+renderOverview();
+renderProgress();
+renderHelpAtHome();
+renderSessions();
+renderAbout();
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
